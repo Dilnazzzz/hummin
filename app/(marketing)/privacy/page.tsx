@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PhaseChip } from "@/components/placeholder";
 
 export const metadata: Metadata = { title: "Privacy policy" };
 
@@ -10,9 +9,6 @@ export default function PrivacyPage() {
       <p className="mt-4 text-[15px] text-ink-2">
         Draft placeholder. The real policy is written before the Google sign-in consent screen goes live.
       </p>
-      <div className="mt-4">
-        <PhaseChip phase={10} />
-      </div>
       <div className="mt-8 flex flex-col gap-4 text-[15px] text-ink-2">
         <p>
           <strong className="text-ink">What we store.</strong> Your name, email and avatar for sign-in. Your area,

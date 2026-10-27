@@ -17,7 +17,7 @@ export function saveDraftBundle(b: DraftBundle) {
   } catch {}
 }
 
-export function loadDraftBundle(): DraftBundle | null {
+function loadDraftBundle(): DraftBundle | null {
   try {
     const raw = sessionStorage.getItem(KEY);
     if (!raw) return null;

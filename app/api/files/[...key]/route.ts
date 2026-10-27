@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextResponse, type NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { events, saves } from "@/lib/db/schema";
@@ -40,5 +40,3 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/files/[...k
     },
   });
 }
-
-void or;

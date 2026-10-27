@@ -4,7 +4,7 @@ import { events, saves, type Category, type Event, type SaveStatus } from "./db/
 import { nextOccurrence, windows } from "./dates";
 import { distanceMiles } from "./geocode";
 
-export type HumItem = {
+type HumItem = {
   event: Event;
   status: SaveStatus;
   /** The occurrence this item is about (next one for recurring events). */
@@ -129,7 +129,7 @@ function bigrams(s: string) {
 }
 
 /** Dice coefficient on character bigrams, 0..1. */
-export function titleSimilarity(a: string, b: string) {
+function titleSimilarity(a: string, b: string) {
   const A = bigrams(a);
   const B = bigrams(b);
   let overlap = 0;

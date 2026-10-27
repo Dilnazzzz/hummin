@@ -8,7 +8,6 @@ import {
   jsonb,
   pgEnum,
   pgTable,
-  primaryKey,
   real,
   text,
   timestamp,
@@ -154,9 +153,6 @@ export const captures = pgTable(
   },
   (t) => [index("captures_user_created_idx").on(t.userId, t.createdAt)],
 );
-
-// Keep primaryKey imported for composite keys added later.
-void primaryKey;
 
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;

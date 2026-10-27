@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { PhaseChip } from "@/components/placeholder";
 
 export const metadata: Metadata = { title: "Terms of service" };
 
@@ -10,9 +9,6 @@ export default function TermsPage() {
       <p className="mt-4 text-[15px] text-ink-2">
         Draft placeholder. Required for Google sign-in; finalised in the launch polish phase.
       </p>
-      <div className="mt-4">
-        <PhaseChip phase={10} />
-      </div>
       <div className="mt-8 flex flex-col gap-4 text-[15px] text-ink-2">
         <p>
           <strong className="text-ink">The service.</strong> Hummin&apos; helps you save and remember events. Event

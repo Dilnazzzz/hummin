@@ -1,17 +1,10 @@
-import { addDays, differenceInCalendarDays, endOfDay, isSameDay, startOfDay } from "date-fns";
+import { addDays, differenceInCalendarDays, endOfDay, startOfDay } from "date-fns";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import { RRule } from "rrule";
-
-export const DEFAULT_TZ = "America/Los_Angeles";
 
 /** "2026-11-01T08:00" in tz → UTC Date. */
 export function localToUtc(local: string, tz: string): Date {
   return fromZonedTime(local, tz);
-}
-
-/** UTC Date → "2026-11-01T08:00" in tz. */
-export function utcToLocal(date: Date, tz: string): string {
-  return formatInTimeZone(date, tz, "yyyy-MM-dd'T'HH:mm");
 }
 
 export function dateTile(date: Date, tz: string, allDay = false) {
@@ -28,10 +21,6 @@ export function formatWhen(start: Date, end: Date | null, tz: string, allDay = f
   if (!end) return `${day} · ${s}`;
   const e = formatInTimeZone(end, tz, "h:mm a").replace(":00", "");
   return `${day} · ${s}–${e}`;
-}
-
-export function formatTime(date: Date, tz: string) {
-  return formatInTimeZone(date, tz, "h:mm a").replace(":00", "");
 }
 
 /** "Tonight", "Tomorrow", "In 3 days", or null when further out or past. */
@@ -64,10 +53,6 @@ export function windows(tz: string, now = new Date()) {
     weekendEnd: toUtc(dow === 0 ? endOfDay(n) : weekendEnd),
     weekEnd: toUtc(endOfWeek),
   };
-}
-
-export function isSameLocalDay(a: Date, b: Date, tz: string) {
-  return isSameDay(toZonedTime(a, tz), toZonedTime(b, tz));
 }
 
 // --- recurrence -------------------------------------------------------------

@@ -2,7 +2,6 @@ import { Camera, Check, MapPin } from "lucide-react";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ButtonLink } from "@/components/ui/button-link";
-import { PhaseChip } from "@/components/placeholder";
 import { getSession } from "@/lib/session";
 
 /** Signed-in visitors go straight to their hum. Streams in behind the static landing. */
@@ -77,15 +76,6 @@ export default function LandingPage() {
         </ol>
       </section>
 
-      <section className="mt-12 flex flex-col gap-3 rounded-panel bg-ink p-6 text-paper lg:mt-16 lg:p-8">
-        <p className="label-caps text-lime">Demo</p>
-        <p className="text-base font-semibold">A short capture-to-saved clip goes here.</p>
-        <p className="text-[15px] text-paper/80">Snap a flyer, check the details, saved to your hum in under 15 seconds.</p>
-        <div className="mt-2 aspect-video w-full max-w-[560px] rounded-card border border-dashed border-paper/30" />
-        <div className="mt-2">
-          <PhaseChip phase={10} />
-        </div>
-      </section>
     </main>
   );
 }

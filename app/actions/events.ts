@@ -113,7 +113,7 @@ export async function saveDraft(input: DraftInput): Promise<SaveDraftResult> {
 }
 
 /** "Hum it" on an existing (listed) event. */
-export async function humEvent(eventId: string) {
+async function humEvent(eventId: string) {
   const user = await requireUser(`/e/${eventId}`);
   const ev = await getEvent(eventId);
   if (!ev || (!ev.isListed && ev.userId !== user.id && !ev.shareSlug)) return { ok: false as const, error: "Not found" };
@@ -127,7 +127,7 @@ export async function humEvent(eventId: string) {
   return { ok: true as const };
 }
 
-export async function setGoing(eventId: string, going: boolean) {
+async function setGoing(eventId: string, going: boolean) {
   const user = await requireUser(`/e/${eventId}`);
   await db
     .insert(saves)
@@ -138,14 +138,14 @@ export async function setGoing(eventId: string, going: boolean) {
 }
 
 /** "I can't make it": keeps the row (so we don't re-suggest it) but drops it from the hum. */
-export async function skipEvent(eventId: string) {
+async function skipEvent(eventId: string) {
   const user = await requireUser(`/e/${eventId}`);
   await db.update(saves).set({ status: "skipped", updatedAt: new Date() }).where(and(eq(saves.userId, user.id), eq(saves.eventId, eventId)));
   revalidatePath("/hum");
   revalidatePath(`/e/${eventId}`);
 }
 
-export async function deleteEvent(eventId: string) {
+async function deleteEvent(eventId: string) {
   const user = await requireUser(`/e/${eventId}`);
   const ev = await getEvent(eventId);
   if (!ev || ev.userId !== user.id) return;
@@ -155,7 +155,7 @@ export async function deleteEvent(eventId: string) {
   redirect("/hum?deleted=1");
 }
 
-export async function setListed(eventId: string, listed: boolean) {
+async function setListed(eventId: string, listed: boolean) {
   const user = await requireUser(`/e/${eventId}`);
   const ev = await getEvent(eventId);
   if (!ev || ev.userId !== user.id) return;

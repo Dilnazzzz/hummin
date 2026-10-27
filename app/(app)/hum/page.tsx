@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ArrowRight, User } from "lucide-react";
+import { ArrowRight, Settings } from "lucide-react";
 import { EventCard } from "@/components/events/event-card";
 import { Logo } from "@/components/logo";
 import { PageContainer } from "@/components/page-container";
-import { EmptyState } from "@/components/placeholder";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ButtonLink } from "@/components/ui/button-link";
 import { Toast } from "@/components/ui/toast";
 import { listHum } from "@/lib/events";
@@ -27,8 +27,8 @@ export default function HumPage({ searchParams }: PageProps<"/hum">) {
     <PageContainer>
       <div className="mb-6 flex items-center justify-between lg:hidden">
         <Logo size={26} />
-        <Link href="/me" aria-label="Your profile" className="flex size-11 items-center justify-center rounded-full border border-line bg-surface text-ink">
-          <User size={20} strokeWidth={1.8} aria-hidden="true" />
+        <Link href="/settings" aria-label="Settings" className="flex size-11 items-center justify-center rounded-full border border-line bg-surface text-ink">
+          <Settings size={20} strokeWidth={1.8} aria-hidden="true" />
         </Link>
       </div>
       <Suspense fallback={<HumSkeleton />}>

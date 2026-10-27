@@ -12,7 +12,6 @@ const schema = z.object({
   BETTER_AUTH_URL: z.url().default("http://localhost:3000"),
   GOOGLE_CLIENT_ID: opt(),
   GOOGLE_CLIENT_SECRET: opt(),
-  ADMIN_EMAILS: z.string().default(""),
 
   ANTHROPIC_API_KEY: opt(),
   AI_MODEL_FAST: z.string().default("claude-haiku-4-5"),
@@ -23,7 +22,6 @@ const schema = z.object({
   EMAIL_FROM: z.string().default("Hummin' <hello@hummin.app>"),
 
   UPLOAD_DIR: z.string().default("./.uploads"),
-  CRON_SECRET: opt(),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -40,12 +38,3 @@ function load(): Env {
 /** Server-only. Never import from a Client Component. */
 export const env = load();
 
-export const adminEmails = new Set(
-  env.ADMIN_EMAILS.split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean),
-);
-
-export function isAdminEmail(email: string | null | undefined) {
-  return !!email && adminEmails.has(email.toLowerCase());
-}

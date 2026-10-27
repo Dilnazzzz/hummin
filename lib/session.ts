@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { auth } from "./auth";
-import { isAdminEmail } from "./env";
 
 /** Current session or null. Request-time: call inside a Suspense boundary or a Server Action. */
 export const getSession = cache(async () => {
@@ -16,8 +15,3 @@ export async function requireUser(next?: string) {
   return session.user;
 }
 
-export async function requireAdmin() {
-  const user = await requireUser("/admin");
-  if (!isAdminEmail(user.email)) redirect("/hum");
-  return user;
-}

@@ -7,7 +7,7 @@ import { CATEGORY_LABEL, CATEGORY_TINT } from "@/components/events/category";
 import { DateTile } from "@/components/events/date-tile";
 import { ExploreMap, type MapPin } from "@/components/explore/explore-map";
 import { PageContainer } from "@/components/page-container";
-import { EmptyState } from "@/components/placeholder";
+import { EmptyState } from "@/components/ui/empty-state";
 import { buttonClasses } from "@/components/ui/button-link";
 import { dateTile, formatWhen } from "@/lib/dates";
 import { CATEGORIES, type Category } from "@/lib/db/schema";

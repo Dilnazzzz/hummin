@@ -4,11 +4,10 @@ import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { userProfiles } from "@/lib/db/schema";
+import { CATEGORIES, userProfiles } from "@/lib/db/schema";
 import { geocode, reverseGeocode } from "@/lib/geocode";
 import { requireUser } from "@/lib/session";
 import { safeNext } from "@/lib/safe-next";
-import { CATEGORIES } from "@/lib/db/schema";
 
 const onboardingSchema = z.object({
   area: z.string().trim().max(120).default(""),

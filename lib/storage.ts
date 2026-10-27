@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { env } from "./env";
 
@@ -41,20 +41,7 @@ export async function getObject(key: string): Promise<Buffer | null> {
   }
 }
 
-export async function deleteObject(key: string) {
-  try {
-    await unlink(resolveSafe(key));
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
-  }
-}
-
 export function contentTypeFor(key: string) {
   const ext = path.extname(key).toLowerCase();
   return ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg";
-}
-
-/** URL the browser can load (served by /api/files with an ownership check). */
-export function imageUrl(key: string) {
-  return `/api/files/${key}`;
 }

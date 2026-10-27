@@ -7,7 +7,7 @@ type SignalMarkProps = {
 };
 
 /** The signal mark: a dot plus two arcs. Stands in for the apostrophe in "hummin'". */
-export function SignalMark({ size = 20, className }: SignalMarkProps) {
+function SignalMark({ size = 20, className }: SignalMarkProps) {
   return (
     <svg
       viewBox="0 0 34 40"

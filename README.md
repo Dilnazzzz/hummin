@@ -52,8 +52,8 @@ Open it and you land on `/welcome` (first time) or wherever you were going. Goog
 app/
   (marketing)/            /, /privacy, /terms
   (auth)/                 /login, /welcome (+ actions.ts: onboarding, profile)
-  (app)/                  /hum, /explore, /e/[id], /settings, /me, /admin — inside AppShell
-  (capture)/              /catch, /catch/confirm, /catch/reading — AppShell without bottom nav
+  (app)/                  /hum, /explore, /e/[id], /settings — inside AppShell
+  (capture)/              /catch, /catch/confirm — AppShell without bottom nav
   actions/events.ts       server actions: saveDraft, humEvent, setGoing, skip, delete, setListed
   api/auth/[...all]       Better Auth handler
   api/extract             capture → events
@@ -62,6 +62,7 @@ components/
   app-shell/              nav (bottom nav < 1024px, sidebar ≥ 1024px)
   auth/                   login form, welcome form
   catch/                  capture screen, confirm screen, reading overlay, draft store
+  ui/                     button styles, empty state, toast
   events/                 EventCard, DateTile, Tag, category colours
   explore/explore-map     MapLibre map (worker served from /public)
 lib/
@@ -86,7 +87,7 @@ proxy.ts                  cookie check → /login for protected paths
 - [x] 4. Capture (local disk instead of R2; PDF not yet)
 - [x] 5. Extraction (needs `ANTHROPIC_API_KEY`)
 - [x] 6. Real data (edit event not yet)
-- [x] 7. Explore + map (filters sheet and `/admin` seeding not yet; use `npm run db:seed` or "List it in Explore")
+- [x] 7. Explore + map (filters sheet and `/admin` not yet; seed with `npm run db:seed` or tick "List it in Explore")
 - [ ] 8. Calendar + sharing (Google Calendar link done; `.ics` and share slug pending)
 - [ ] 9. Reminders
 - [ ] 10. Launch polish

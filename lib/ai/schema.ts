@@ -5,7 +5,7 @@ import { CATEGORIES } from "../db/schema";
  * What the model fills in. Kept free of regex/format constraints so it works
  * as a constrained-decoding schema; stricter checks happen in post-processing.
  */
-export const extractedEventSchema = z.object({
+const extractedEventSchema = z.object({
   title: z.string().describe("Event name as written, title case, no emoji"),
   description: z.string().nullable().describe("One or two sentences from the source, or null"),
   start_local: z

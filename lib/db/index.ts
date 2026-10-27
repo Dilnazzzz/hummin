@@ -18,4 +18,3 @@ const pool =
 if (env.NODE_ENV !== "production") globalForDb.__humminPool = pool;
 
 export const db: Db = drizzle(pool, { schema });
-export { schema };

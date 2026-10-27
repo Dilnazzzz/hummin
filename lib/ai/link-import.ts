@@ -28,7 +28,7 @@ async function assertSafeUrl(raw: string): Promise<URL> {
   return url;
 }
 
-export function isInstagram(raw: string) {
+function isInstagram(raw: string) {
   try {
     const h = new URL(raw).hostname;
     return h === "instagram.com" || h.endsWith(".instagram.com");
