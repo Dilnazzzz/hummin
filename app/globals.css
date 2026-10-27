@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces */
+  --color-paper: #faf8f3; /* app background */
+  --color-surface: #ffffff; /* cards, inputs, nav */
+  --color-sunken: #efece4; /* tab track, neutral chips */
+  --color-line: #e4e0d6; /* hairline borders */
+  --color-line-strong: #c9c4b8; /* secondary button borders, dashed empty states */
+
+  /* Text */
+  --color-ink: #1b1a20; /* text, primary buttons, dark cards */
+  --color-ink-2: #4a4752; /* body secondary */
+  --color-muted: #5e5b66; /* meta text (passes 4.5:1 on paper) */
+  --color-faint: #8a8792; /* inactive nav only */
+
+  /* Accent and states */
+  --color-lime: #d4f53c; /* accent FILLS only, never text on paper */
+  --color-sage: #dcebdf; /* saved state, success */
+  --color-sage-ink: #1e3a28;
+  --color-warn: #fff4d6; /* missing field on confirm */
+  --color-warn-line: #e8b93a;
+  --color-warn-ink: #7a5200;
+
+  /* Category tints: bg / text */
+  --color-cat-wellness: #dcebdf;
+  --color-cat-wellness-ink: #1e3a28;
+  --color-cat-food: #fbe3d4;
+  --color-cat-food-ink: #6b2e12;
+  --color-cat-art: #e3e0fb;
+  --color-cat-art-ink: #2e2870;
+  --color-cat-music: #d8eaf8;
+  --color-cat-music-ink: #123e62;
+  --color-cat-community: #f6e9c6;
+  --color-cat-community-ink: #5a4205;
+  --color-cat-fitness: #e0f0f4;
+  --color-cat-fitness-ink: #0f4452;
+  --color-cat-learning: #f3e1ec;
+  --color-cat-learning-ink: #5e1f45;
+
+  /* Type */
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), Georgia, serif;
+
+  /* Radii */
+  --radius-chip: 999px;
+  --radius-card: 18px;
+  --radius-panel: 24px;
+  --radius-tile: 14px;
+
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Visible focus ring: 2px ink outline, 2px offset */
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-ink);
+  }
+}
+
+/* Screen titles: Instrument Serif italic, 40–44px mobile / 52px desktop, line-height 1 */
+@utility title-screen {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+
+  @media (min-width: 1024px) {
+    font-size: 52px;
+  }
+}
+
+/* Labels, small caps headers: 11–12px, 600–700, tracked, uppercase */
+@utility label-caps {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Reading animation: three lime rounded bars scaling, staggered */
+@keyframes hum-bar {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@utility hum-bar {
+  transform-origin: center;
+  animation: hum-bar 0.9s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+}
