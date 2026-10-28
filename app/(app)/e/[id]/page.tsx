@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { Calendar, ChevronLeft, ExternalLink, MapPin, Repeat, Ticket, Trash2, Users } from "lucide-react";
 import { deleteEventForm, humEventForm, setGoingForm, setListedForm, skipEventForm } from "@/app/actions/events";
 import { CATEGORY_LABEL, CATEGORY_TINT } from "@/components/events/category";
@@ -45,6 +46,8 @@ function googleCalendarUrl(ev: NonNullable<Awaited<ReturnType<typeof getEvent>>>
 }
 
 async function EventContent({ params }: { params: PageProps<"/e/[id]">["params"] }) {
+  await connection(); // request-time from here on, so reading the clock below is allowed
+  const now = new Date();
   const { id } = await params;
   const session = await getSession();
   const userId = session?.user.id ?? null;
@@ -56,8 +59,8 @@ async function EventContent({ params }: { params: PageProps<"/e/[id]">["params"]
   const going = save?.status === "going";
   const isOwner = userId === ev.userId;
   const tz = ev.timezone;
-  const at = (ev.rrule ? nextOccurrence(ev.rrule, ev.startAt, tz) : ev.startAt) ?? ev.startAt;
-  const chip = saved ? relativeChip(at, tz) : null;
+  const at = (ev.rrule ? nextOccurrence(ev.rrule, ev.startAt, tz, now) : ev.startAt) ?? ev.startAt;
+  const chip = saved ? relativeChip(at, tz, now) : null;
   const goingCount = await countGoing(ev.id);
   const where = [ev.venueName, ev.address].filter(Boolean).join(" · ");
   const mapsUrl = ev.lat != null && ev.lng != null ? `https://www.google.com/maps/search/?api=1&query=${ev.lat},${ev.lng}` : where ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(where)}` : null;

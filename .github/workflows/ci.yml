@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time only. The build never connects to a database; these satisfy
+      # the startup env validation in lib/env.ts.
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      BETTER_AUTH_SECRET: ci-only-secret-not-real-0123456789
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Next.js production build runs the TypeScript typecheck and validates
+      # every route against the Cache Components prerender rules.
+      - name: Build
+        run: npm run build

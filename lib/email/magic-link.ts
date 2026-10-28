@@ -5,7 +5,8 @@ import { env } from "../env";
 // globalThis so route handlers and server actions share it.
 type DevLinks = Map<string, { url: string; at: number }>;
 const devLinks: DevLinks = ((globalThis as { __humminDevLinks?: DevLinks }).__humminDevLinks ??= new Map());
-const DEV_LINKS_ENABLED = env.NODE_ENV !== "production" && !env.RESEND_API_KEY;
+// Development never sends email: the link is printed and offered on the sign-in screen.
+const DEV_LINKS_ENABLED = env.NODE_ENV !== "production";
 
 export function peekDevMagicLink(email: string): string | null {
   if (!DEV_LINKS_ENABLED) return null;
@@ -14,13 +15,14 @@ export function peekDevMagicLink(email: string): string | null {
 }
 
 /**
- * Sends the magic link with Resend when a key is configured.
- * In development without a key, prints the link to the server terminal instead.
+ * Production: sends the magic link with Resend. Development: never sends; the link is
+ * printed to the terminal and offered on the sign-in screen.
  */
 export async function sendMagicLinkEmail(to: string, url: string) {
-  if (!env.RESEND_API_KEY) {
+  if (DEV_LINKS_ENABLED || !env.RESEND_API_KEY) {
     console.log(`\n[hummin] Magic link for ${to}\n${url}\n`);
     if (DEV_LINKS_ENABLED) devLinks.set(to.trim().toLowerCase(), { url, at: Date.now() });
+    if (!env.RESEND_API_KEY && !DEV_LINKS_ENABLED) throw new Error("RESEND_API_KEY is not set; cannot send sign-in email");
     return;
   }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { Check, List, Map as MapIcon } from "lucide-react";
 import { humEventForm } from "@/app/actions/events";
 import { CATEGORY_LABEL, CATEGORY_TINT } from "@/components/events/category";
@@ -48,6 +49,8 @@ function buildHref(sp: Record<string, string | string[] | undefined>, patch: Rec
 }
 
 async function ExploreContent({ searchParams }: { searchParams: PageProps<"/explore">["searchParams"] }) {
+  await connection(); // request-time from here on, so reading the clock below is allowed
+  const now = new Date();
   const sp = await searchParams;
   const session = await getSession();
   const userId = session?.user.id ?? null;
@@ -63,7 +66,7 @@ async function ExploreContent({ searchParams }: { searchParams: PageProps<"/expl
   const view = sp.view === "map" ? "map" : "list";
   const all = sp.all === "1";
 
-  const items = await listExplore(userId, tz, { when, free, categories: cats, center, radiusMiles: all ? undefined : radius });
+  const items = await listExplore(userId, tz, { when, free, categories: cats, center, radiusMiles: all ? undefined : radius }, now);
   const pins: MapPin[] = items
     .filter((i) => i.event.lat != null && i.event.lng != null)
     .map((i) => ({

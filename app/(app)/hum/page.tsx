@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { ArrowRight, Settings } from "lucide-react";
 import { EventCard } from "@/components/events/event-card";
 import { Logo } from "@/components/logo";
@@ -39,11 +40,13 @@ export default function HumPage({ searchParams }: PageProps<"/hum">) {
 }
 
 async function HumContent({ searchParams }: { searchParams: PageProps<"/hum">["searchParams"] }) {
+  await connection(); // request-time from here on, so reading the clock below is allowed
+  const now = new Date();
   const user = await requireUser("/hum");
   const sp = await searchParams;
   const profile = await ensureProfile(user.id);
   const tz = profile.timezone;
-  const lists = await listHum(user.id, tz);
+  const lists = await listHum(user.id, tz, now);
   const tab: TabKey = sp.tab === "upcoming" || sp.tab === "recurring" ? sp.tab : "week";
   const items = tab === "week" ? lists.thisWeek : tab === "upcoming" ? lists.upcoming : lists.recurring;
   const saved = typeof sp.saved === "string" ? Number(sp.saved) : 0;
