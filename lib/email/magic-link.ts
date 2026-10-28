@@ -1,5 +1,18 @@
 import { env } from "../env";
 
+// Development only: remember the last link per email so the login screen can
+// offer it directly (no email provider on a laptop or phone test). Lives on
+// globalThis so route handlers and server actions share it.
+type DevLinks = Map<string, { url: string; at: number }>;
+const devLinks: DevLinks = ((globalThis as { __humminDevLinks?: DevLinks }).__humminDevLinks ??= new Map());
+const DEV_LINKS_ENABLED = env.NODE_ENV !== "production" && !env.RESEND_API_KEY;
+
+export function peekDevMagicLink(email: string): string | null {
+  if (!DEV_LINKS_ENABLED) return null;
+  const hit = devLinks.get(email.trim().toLowerCase());
+  return hit && Date.now() - hit.at < 15 * 60 * 1000 ? hit.url : null;
+}
+
 /**
  * Sends the magic link with Resend when a key is configured.
  * In development without a key, prints the link to the server terminal instead.
@@ -7,6 +20,7 @@ import { env } from "../env";
 export async function sendMagicLinkEmail(to: string, url: string) {
   if (!env.RESEND_API_KEY) {
     console.log(`\n[hummin] Magic link for ${to}\n${url}\n`);
+    if (DEV_LINKS_ENABLED) devLinks.set(to.trim().toLowerCase(), { url, at: Date.now() });
     return;
   }
 

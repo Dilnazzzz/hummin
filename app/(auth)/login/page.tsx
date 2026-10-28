@@ -2,28 +2,29 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
-import { safeNext } from "@/lib/safe-next";
 import { env } from "@/lib/env";
+import { safeNext } from "@/lib/safe-next";
 import { getSession } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
-
 export default function LoginPage({ searchParams }: PageProps<"/login">) {
   return (
     <Suspense fallback={<LoginSkeleton />}>
-      <RedirectIfSignedIn searchParams={searchParams} />
-      <LoginForm googleEnabled={googleEnabled} />
+      <LoginGate searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function RedirectIfSignedIn({ searchParams }: { searchParams: PageProps<"/login">["searchParams"] }) {
+/** Request-time: redirects signed-in visitors and reads provider config from the live environment. */
+async function LoginGate({ searchParams }: { searchParams: PageProps<"/login">["searchParams"] }) {
   const session = await getSession();
-  if (!session) return null;
-  const { next } = await searchParams;
-  redirect(safeNext(typeof next === "string" ? next : null));
+  if (session) {
+    const { next } = await searchParams;
+    redirect(safeNext(typeof next === "string" ? next : null));
+  }
+  const googleEnabled = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+  return <LoginForm googleEnabled={googleEnabled} />;
 }
 
 function LoginSkeleton() {

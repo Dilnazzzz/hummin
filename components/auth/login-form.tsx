@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { authClient } from "@/lib/auth-client";
 import { buttonClasses } from "@/components/ui/button-link";
 import { safeNext } from "@/lib/safe-next";
+import { devMagicLink } from "@/app/(auth)/login/actions";
 
 type Props = { googleEnabled: boolean };
 
@@ -15,6 +16,7 @@ export function LoginForm({ googleEnabled }: Props) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [devLink, setDevLink] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -32,6 +34,7 @@ export function LoginForm({ googleEnabled }: Props) {
       return;
     }
     setState("sent");
+    if (process.env.NODE_ENV !== "production") setDevLink(await devMagicLink(email.trim()));
   }
 
   async function google() {
@@ -49,9 +52,16 @@ export function LoginForm({ googleEnabled }: Props) {
         <p className="text-[15px] text-ink-2">
           We sent a sign-in link to <strong className="text-ink">{email}</strong>. It works for 15 minutes.
         </p>
-        {process.env.NODE_ENV !== "production" ? (
+        {devLink ? (
+          <div className="flex flex-col gap-2 rounded-tile border border-warn-line bg-warn p-3">
+            <p className="text-[13px] text-warn-ink">Development shortcut: no email provider is set up, so here is the link.</p>
+            <a href={devLink} className={buttonClasses({ size: "lg" })}>
+              Open the sign-in link
+            </a>
+          </div>
+        ) : process.env.NODE_ENV !== "production" ? (
           <p className="rounded-tile bg-warn px-3 py-2 text-[13px] text-warn-ink">
-            Local dev without an email key: the link is printed in the terminal running <code>npm run dev</code>.
+            Local dev: the link is printed in the terminal running <code>npm run dev</code>.
           </p>
         ) : null}
         <button
