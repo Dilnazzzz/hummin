@@ -4,204 +4,161 @@
 
 Never miss what's hummin'. Save events from anywhere. Actually go.
 
-![Hummin' — Explore with listed events and a map](public/screenshot.png)
+![Hummin' — Explore view with listed events and a map](public/screenshot.png)
 
-Hummin' catches local events wherever you find them (a photo of a flyer, a screenshot of a story, a pasted link or text), turns them into a structured event with AI, asks you to confirm it, and then remembers it for you: your week, your recurring classes, and a map of what's hummin' nearby.
+Hummin' is a mobile-first web app for catching local events from wherever they turn up: a photo of a flyer, a screenshot of a story, a pasted link or a block of text. It reads the event with AI, asks you to confirm the details, and then remembers it for you, including the recurring ones, with a map of what's happening nearby.
 
-## Why this exists
+## Features
 
-Local events are scattered across Instagram stories, newsletters, group chats and cafe boards. You find them by luck, screenshot them, and forget. The recurring ones are the worst: the Thursday market, the Sunday run club, the first-Saturday potluck all live in your head until they don't. Calendar apps assume you'll type the details in. Nobody does.
-
-Hummin' makes capture the fast part. Open, snap, check, saved, under fifteen seconds. The slow, careful part is the one that matters: **nothing is saved without the "Is this right?" step**, because a wrong date destroys trust faster than any missing feature.
+- **Capture from anything.** Camera or library photos (HEIC supported), up to ten screenshots at once, drag-and-drop or clipboard paste on desktop, links, or plain text.
+- **Exact import for event links.** Luma, Eventbrite, Partiful and any page with schema.org `Event` data are imported verbatim, with no model involved.
+- **AI reading with a fixed schema.** Flyers and text are read into a typed structure: title, local start and end, venue, address, price, host, category, recurrence, a confidence score and the fields that were not visible. A stronger model re-reads anything uncertain.
+- **Confirm before save.** Every field is editable; anything the flyer didn't contain is highlighted. Likely duplicates are flagged before saving.
+- **Your hum.** Saved events grouped as This week, Upcoming and Recurring, with the next occurrence of each series computed in its own timezone.
+- **Explore.** Events people chose to list, filtered by time, price and category, with distance from your area and a map.
+- **Private by default.** An event is visible only to you unless you list it. Listing can be reversed at any time.
+- **Sign in without passwords.** Google or an emailed magic link.
 
 ## How it works
 
-The design principle: **the model reads, code decides, you confirm.**
-
-- **Capture from anything.** Camera or library photos (HEIC converted in the browser), up to ten screenshots at once, drag-and-drop or clipboard paste on desktop, a link, or pasted text. Images are rotated upright, resized to 1500px and stripped of metadata (including GPS) before anything else happens.
-- **Links are imported, not guessed.** Luma, Eventbrite, Partiful and any page with schema.org `Event` JSON-LD are fetched server-side (SSRF-guarded, 2 MB and 8 s caps) and the structured data is used verbatim. No model call. Instagram can't be fetched behind its login wall, so the app says "screenshot it instead."
-- **Everything else is read by Claude with a fixed schema.** The image and/or text go to the model with the capture time, your timezone and today's date, and a system prompt with the rules: only report what's visible, never invent a date, resolve "this Saturday" against when the photo was taken, return every event on the flyer, express repeats as an RFC 5545 RRULE. The response is constrained to a typed schema (title, local start and end, venue, address, price, host, category, recurrence, a confidence score, and the list of fields it could not find).
-- **Two passes.** The fast model (`claude-haiku-4-5`) reads first. Any event under 0.6 confidence or with a malformed date is retried on the stronger model (`claude-sonnet-5`) and the better result wins. Every attempt is logged with model, latency and token counts.
-- **You confirm.** Every field is editable. Fields the flyer didn't have are amber ("Not on the flyer"). A duplicate check (similar title within two hours of an event you already saved) runs before anything is written.
-- **Private by default.** A saved event is yours alone. Tick "List it in Explore" and it appears for everyone nearby, geocoded onto the map. Flip it back any time.
-- **Recurring events are first-class.** The next occurrence is computed from the RRULE in the event's own timezone, so a weekly class shows up under "This week" with the right date every week.
-
-## Architecture
-
 ```
-Phone / desktop browser
-   │  photo · screenshots · link · text
-   ▼
-POST /api/extract ──► sharp: rotate, resize ≤1500px, strip EXIF ──► local disk / volume
-   │
-   ├─ URL?  fetch (SSRF guard) ─► schema.org Event JSON-LD found ─► draft events (no model)
-   │                              └─ otherwise page text ─┐
-   ▼                                                      ▼
-Claude (fast) ── structured output (Zod schema) ──► confidence < 0.6 or bad date? ──► Claude (strong)
-   │                                                                                   │
-   └──────────────────────► normalise: RRULE check, local time → instant, price ◄──────┘
-                                      │  logged to `captures`
-                                      ▼
-                            /catch/confirm  (sessionStorage draft, every field editable)
-                                      │  "Hum it" → server action
-                                      ▼
-                     duplicate check → geocode venue (Nominatim) → events + saves rows
-                                      │
-                 ┌────────────────────┼─────────────────────┐
-                 ▼                    ▼                     ▼
-             /hum (tabs)        /e/[id] (actions)     /explore (filters + MapLibre map)
+capture (photo · screenshots · link · text)
+   └─► POST /api/extract
+         ├─ image clean-up: rotate, resize to 1500px, strip metadata
+         ├─ link? fetch (guarded) → schema.org Event → draft   (no model call)
+         └─ otherwise: fast model → low confidence? → strong model
+                         structured output, validated in code
+   └─► /catch/confirm  (every field editable)
+         └─► save: duplicate check → geocode venue → event + save rows
+               ├─ /hum        This week · Upcoming · Recurring
+               ├─ /e/[id]     goin', calendar, register, list/unlist
+               └─ /explore    filters, distance, map
 ```
 
-Key modules:
-
-- `lib/ai/extract.ts` — the pipeline: link import → fast model → strong retry → normalised drafts, logged to `captures`
-- `lib/ai/link-import.ts` — SSRF-guarded fetch and schema.org `Event` parsing
-- `lib/ai/schema.ts`, `lib/ai/prompt.ts` — the output schema and the versioned system prompt
-- `app/actions/events.ts` — server actions: save a draft, Hum it, goin', skip, delete, list/unlist
-- `lib/events.ts` — Your hum lists, the Explore query, duplicate detection
-- `lib/dates.ts` — timezone-correct next occurrence for recurring events (rrule in "floating" time)
-- `lib/auth.ts`, `lib/session.ts` — Better Auth (Google + magic link) and the session helpers
-- `instrumentation.ts` — applies Drizzle migrations when the production server starts
+Design principle: the model reads, code decides, the user confirms. Nothing is written without the confirm step. Dates are resolved relative to when the capture was taken and stored as instants together with the event's IANA timezone; recurrence is stored as an RFC 5545 rule and expanded at read time.
 
 ## Tech stack
 
-- Next.js 16 (App Router, Cache Components) + TypeScript + Tailwind CSS v4
-- Postgres + Drizzle ORM
-- Better Auth: Google OAuth and email magic links, no passwords
-- Anthropic API with structured outputs, validated with Zod
-- sharp (server) and heic2any (browser) for images; date-fns-tz and rrule for time
-- MapLibre GL with OpenFreeMap tiles; Nominatim for geocoding (no keys)
-- Resend for email; Railway for hosting
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router, Cache Components), TypeScript, Tailwind CSS v4 |
+| Database | Postgres with Drizzle ORM |
+| Authentication | Better Auth (Google OAuth, email magic link) |
+| AI | Anthropic API, structured outputs validated with Zod |
+| Images | sharp on the server, heic2any in the browser |
+| Dates | date-fns-tz, rrule |
+| Map and geocoding | MapLibre GL with OpenFreeMap tiles, Nominatim |
+| Email | Resend |
+| Hosting | Railway (app, Postgres, volume for uploads) |
 
-## Quick start
+## Getting started
 
-You need Node.js 20+, Docker (for Postgres) and an [Anthropic API key](https://console.anthropic.com/).
+Requirements: Node.js 20 or later, Docker for a local Postgres, and an Anthropic API key.
 
 ```bash
-# Postgres on port 5433 (the first run creates the container)
-docker start hummin-pg 2>/dev/null || docker run -d --name hummin-pg \
+# 1. Database
+docker run -d --name hummin-pg \
   -e POSTGRES_USER=hummin -e POSTGRES_PASSWORD=hummin -e POSTGRES_DB=hummin \
   -p 5433:5432 -v hummin-pgdata:/var/lib/postgresql/data postgres:16-alpine
 
+# 2. Configuration
+cp .env.example .env.local        # set DATABASE_URL, BETTER_AUTH_SECRET, ANTHROPIC_API_KEY
+
+# 3. Install, migrate, seed, run
 npm install
-cp .env.example .env.local     # set DATABASE_URL, BETTER_AUTH_SECRET, ANTHROPIC_API_KEY
 npm run db:migrate
-npm run db:seed                # seven listed events near Menlo Park so Explore isn't empty
-npm run dev                    # http://localhost:3000
+npm run db:seed                   # sample listed events so Explore has content
+npm run dev                       # http://localhost:3000
 ```
 
-Signing in locally needs no email provider: with `RESEND_API_KEY` unset, the sign-in screen shows an "Open the sign-in link" button (development only) and the link is also printed in the terminal.
+In development no email is sent: after requesting a sign-in link, the sign-in screen offers it directly and it is also printed in the terminal. To test the camera flow on a phone, open the network address printed by the dev server from a device on the same Wi-Fi.
 
-To test the camera flow on a phone, open the "Network" address the dev server prints (same Wi-Fi). Auth follows the request host in development, so links and cookies work on both `localhost` and the phone's address.
+## Configuration
 
-## How to use it
+| Variable | Required | Purpose |
+|---|---|---|
+| `DATABASE_URL` | yes | Postgres connection string |
+| `BETTER_AUTH_SECRET` | yes | session signing key (`openssl rand -base64 32`) |
+| `ANTHROPIC_API_KEY` | yes | reading flyers and text |
+| `APP_URL`, `BETTER_AUTH_URL` | production | public origin of the deployment |
+| `RESEND_API_KEY`, `EMAIL_FROM` | production | magic-link email delivery |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | optional | enables "Continue with Google" |
+| `AI_MODEL_FAST`, `AI_MODEL_STRONG` | optional | model overrides (defaults: `claude-haiku-4-5`, `claude-sonnet-5`) |
+| `AI_DAILY_LIMIT_PER_USER` | optional | extraction limit per user per day (default 30) |
+| `UPLOAD_DIR` | optional | image storage directory (default `./.uploads`) |
 
-1. **Catch.** Tap the lime camera button. Take a photo of a flyer, pick screenshots from your library, paste a link, or paste text. On desktop, drop files or paste an image from the clipboard.
-2. **Check.** The reading screen hands off to "Is this right?". Fix anything the model misread; amber fields are the ones the flyer didn't have. Choose a repeat rule if it's a series. Tick "I'm goin'" or "List it in Explore" if you want.
-3. **Hum it.** It lands in Your hum under This week, Upcoming or Recurring, with a toast.
-4. **Go.** The event page has I'm goin', Add to calendar (Google Calendar link), Register (the host's own page) and "I can't make it". Owners can list, unlist or delete.
-5. **Explore.** Filter by Tonight, This weekend, This week, Free and category; switch to the map; Hum events other people listed.
-
-## Project layout
-
-```
-hummin/
-├── app/
-│   ├── (marketing)/          /, /privacy, /terms
-│   ├── (auth)/               /login, /welcome (+ actions.ts: onboarding, profile)
-│   ├── (app)/                /hum, /explore, /e/[id], /settings — inside AppShell
-│   ├── (capture)/            /catch, /catch/confirm — AppShell without the bottom nav
-│   ├── actions/events.ts     server actions for events and saves
-│   └── api/                  auth handler, extract, files, health
-├── components/
-│   ├── app-shell/            bottom nav (< 1024px) and sidebar (≥ 1024px)
-│   ├── auth/                 login and welcome forms
-│   ├── catch/                capture screen, confirm screen, reading overlay, draft store
-│   ├── events/               EventCard, DateTile, tags, category colours
-│   ├── explore/              MapLibre map (worker served from /public)
-│   └── ui/                   buttons, empty state, toast
-├── lib/
-│   ├── ai/                   prompt, schema, extraction pipeline, link import
-│   ├── db/                   Drizzle schema (+ generated Better Auth tables), client
-│   ├── auth.ts, auth-client.ts, session.ts, profile.ts
-│   ├── events.ts, dates.ts, geocode.ts, storage.ts, rate-limit.ts, env.ts
-│   └── email/                magic-link email (Resend, or terminal in dev)
-├── drizzle/                  SQL migrations
-├── scripts/seed.mts          demo listed events
-├── instrumentation.ts        migrations on server start (production)
-├── proxy.ts                  cookie check → /login for protected paths
-├── SPEC.md · DESIGN.md · SCREENS.md · INFRA.md   the product, design and infra specs
-└── .env.example
-```
-
-## API overview
-
-- `POST /api/extract` — multipart: `images[]`, `text`, `url`, `timezone`, `capturedAt`. Returns draft events, image keys and a capture id. 30 per user per day, 5 per IP signed out.
-- `GET  /api/files/:key` — serves an uploaded image to its owner, or to anyone when the event is listed or saved by the viewer.
-- `GET  /api/health` — 200 when the app is up and the database answers.
-- `/api/auth/*` — Better Auth (Google, magic link, session).
-
-Mutations are Server Actions in `app/actions/events.ts`: `saveDraft`, `humEvent`, `setGoing`, `skipEvent`, `deleteEvent`, `setListed`. Every one re-checks the session and ownership on the server.
-
-## Data model
-
-`events` (one row per event, with `is_listed`, `rrule`, `timezone`, `lat`/`lng`, `ai_confidence`) · `saves` (user ↔ event with `saved | going | went | skipped`) · `captures` (every extraction attempt: model, latency, tokens, result or error) · `user_profiles` (area, radius, interests, timezone, reminder preferences) · `reminders` (scheduled, not yet sent) · Better Auth's `user`, `session`, `account`, `verification`.
-
-`saves` is separate from `events` so one listed event can be saved by many people, and a captured event can later be listed without copying it.
+See `.env.example` for the full list.
 
 ## Deployment
 
-The app runs on Railway: one service for the app, one Postgres, and a volume mounted at `/data` for uploaded images. Deploy from the project folder with `railway up`, or connect the GitHub repo for deploys on push.
+The application is a standard Next.js server. In production it applies pending database migrations on startup (`instrumentation.ts`), exposes `GET /api/health` for health checks, and expects a persistent directory for uploads at `UPLOAD_DIR`.
 
-Migrations run when the server starts (`instrumentation.ts`), so a deploy never serves against an out-of-date schema. Set `MIGRATE_ON_BOOT=0` to opt out.
+On Railway: one service for the app, one Postgres service, a volume mounted at `/data` with `UPLOAD_DIR=/data/uploads`, and the variables above. Google OAuth requires the callback URL `https://<domain>/api/auth/callback/google`; Resend requires a verified sending domain to deliver to arbitrary addresses.
 
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Postgres connection string |
-| `BETTER_AUTH_SECRET` | session signing key (`openssl rand -base64 32`) |
-| `APP_URL`, `BETTER_AUTH_URL` | the public origin, production only |
-| `ANTHROPIC_API_KEY` | flyer reading |
-| `AI_MODEL_FAST`, `AI_MODEL_STRONG`, `AI_DAILY_LIMIT_PER_USER` | optional overrides |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | "Continue with Google"; omit to hide the button |
-| `RESEND_API_KEY`, `EMAIL_FROM` | magic-link email; omit locally for the dev shortcut |
-| `UPLOAD_DIR` | where images are written (`/data/uploads` on Railway) |
-
-Resend in test mode only delivers to the account owner's address; verify a sending domain to let anyone sign in by email. Google sign-in works for the consent screen's test users until the OAuth app is published.
-
-## Tests
+## Development
 
 ```bash
-npm run lint        # ESLint (Next core-web-vitals + TypeScript rules)
-npm run typecheck   # tsc, after `next typegen` or a build
-npm run build       # also validates every route against the Cache Components prerender rules
+npm run dev          # development server
+npm run build        # production build; also type-checks and validates prerendering
+npm run start        # serve the production build
+npm run lint         # ESLint
+npm run typecheck    # TypeScript
+npm run db:generate  # create a migration from schema changes
+npm run db:migrate   # apply migrations
+npm run db:studio    # browse the database
 ```
 
-CI (`.github/workflows/ci.yml`) runs lint and a production build on every push and pull request.
+Continuous integration runs lint and a production build on every push and pull request.
 
-The flows are exercised end to end with headless Chrome via Playwright (sign-in by reading the magic link from the dev log, onboarding, Explore and the map, capture → confirm → save, goin', sign out). The extraction pipeline is checked with a rendered test flyer; a fixture set with expected JSON and an `eval:extract` script is the next step (see INFRA.md §8).
+## Project structure
 
-## Engineering notes
+```
+app/
+  (marketing)/        landing, privacy, terms
+  (auth)/             sign-in, onboarding
+  (app)/              your hum, explore, event page, settings
+  (capture)/          capture and confirm
+  actions/            server actions for events and saves
+  api/                auth, extract, files, health
+components/           app shell, auth, capture, events, explore, ui
+lib/
+  ai/                 prompt, schema, extraction pipeline, link import
+  db/                 Drizzle schema and client
+  auth.ts session.ts  authentication and session helpers
+  events.ts dates.ts  queries, recurrence and time helpers
+  geocode.ts storage.ts env.ts
+drizzle/              SQL migrations
+scripts/seed.mts      sample data
+instrumentation.ts    startup migrations
+proxy.ts              route protection
+```
 
-A few things this project learned the hard way:
+## API
 
-- **Cache Components changes the rules.** Next.js 16 prerenders a static shell for every page, so anything that reads `params`, `searchParams`, cookies, headers or even `new Date()` must sit inside a `<Suspense>` boundary or be cached, or the build fails. Session reads live in small server components behind a boundary; `usePathname` in the shell is wrapped the same way; GET route handlers that must run per request call `connection()`.
-- **Structured output schemas should be plain.** Regex `pattern` and `format` constraints don't belong in the schema the model is constrained to; the model fills a plain schema and strict checks (date shape, RRULE validity) happen in code afterwards.
-- **MapLibre's web worker doesn't survive Turbopack.** The bundled worker URL breaks; the worker file is served from `/public` and set with `setWorkerUrl()`.
-- **Multi-host auth in development.** Better Auth builds links from a configured base URL. For localhost and a phone on the same Wi-Fi to both work, development uses a request-derived base URL with an allow-list of private-network hosts, and Next's `allowedDevOrigins` includes the machine's LAN addresses (computed at config load).
-- **Railway and config files.** The current Railway builder ignored the deploy settings in `railway.json`, so migrations never ran. Running them from `instrumentation.ts` is platform-independent and shows up in the start log.
-- **Resend's test mode is strict.** It only delivers to the account owner's own email until a domain is verified, and the error is a 403 from the send call, not a bounce.
-- **iCloud-synced folders corrupt build caches.** Desktop sync drops `LOG 2`-style duplicates into Turbopack's on-disk cache and crashes `next dev`; the dev cache is disabled and duplicate names are excluded from type-checking.
+| Endpoint | Description |
+|---|---|
+| `POST /api/extract` | Multipart upload (`images[]`, `text`, `url`, `timezone`, `capturedAt`). Returns draft events. Rate limited per user and per IP. |
+| `GET /api/files/:key` | Serves an uploaded image to its owner, or publicly when the event is listed. |
+| `GET /api/health` | Returns 200 when the application and database are reachable. |
+| `/api/auth/*` | Authentication endpoints. |
 
-## Privacy
+Writes are performed through server actions (`app/actions/events.ts`); each verifies the session and ownership on the server.
 
-Private by default; sharing and listing are explicit. Uploaded images are stripped of metadata and served only to their owner unless the event is listed. The model only fills a schema; text inside a flyer is treated as content, never as instructions. No data is sold. "Download my data" and "Delete account" are on the roadmap before public launch.
+## Security and privacy
+
+- Events, saved items and uploaded images are private to their owner unless the event is explicitly listed.
+- Uploaded images are re-encoded and stripped of metadata, including location data, before storage or processing.
+- Server-side link fetching rejects non-HTTP schemes and private network addresses.
+- Text found inside images or pages is treated as content to extract, never as instructions to the model.
+- Every extraction attempt is logged with model, latency and token usage; limits apply per user and per IP.
 
 ## Roadmap
 
-- Calendar files (`.ics` with RRULE) and share links with a "Hum this" CTA
-- Email reminders (evening before and N hours before; re-check the source link before sending)
-- Filters sheet (time of day, distance, price, "good for"), admin seeding page
-- Cloudflare R2 for images, PostHog, PWA install, download/delete account
-- Later: follows, vibe check-ins, weekly "What's hummin'" digest, host pages
+- Calendar export (`.ics` with recurrence) and shareable event links
+- Email reminders, with a re-check of the source link before sending
+- Extended filters (time of day, distance, price, suitability tags)
+- Object storage for uploads, analytics, installable PWA, data export and account deletion
 
-The full product, design, screen and infrastructure specs are in [`SPEC.md`](SPEC.md), [`DESIGN.md`](DESIGN.md), [`SCREENS.md`](SCREENS.md) and [`INFRA.md`](INFRA.md).
+## License
+
+Copyright © 2026 Dilnaz Baltabayeva. All rights reserved.

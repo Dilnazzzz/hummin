@@ -2,6 +2,12 @@
   "name": "hummin",
   "version": "0.1.0",
   "private": true,
+  "description": "Never miss what's hummin'. Save events from anywhere. Actually go.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dilnazzzz/hummin.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
